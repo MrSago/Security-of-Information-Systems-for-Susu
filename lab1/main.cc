@@ -19,10 +19,10 @@ constexpr std::string GenAlphabet(char start, char end) {
 
 class PasswordGenerator {
  private:
-  const std::string alphabet_;
   const double propability_;
   const int velocity_;
   const int time_;
+  const std::string alphabet_;
   const uint64_t S_min_;
 
   uint64_t S_;
@@ -33,15 +33,18 @@ class PasswordGenerator {
   std::uniform_int_distribution<int> uid_;
 
  public:
-  PasswordGenerator(std::string alphabet, double propability, int velocity,
-                    int time)
-      : alphabet_(alphabet),
-        propability_(propability),
+  PasswordGenerator(double propability, int velocity, int time,
+                    int alphabet_bitmask)
+      : propability_(propability),
         velocity_(velocity),
         time_(time),
+        alphabet_(GetAlphabetFromBitmask(alphabet_bitmask)),
         S_min_(std::ceil(velocity * time / propability)),
         gen_(rd_()),
         uid_(0, alphabet_.length() - 1) {
+    if (alphabet_.length() == 0) {
+      throw std::invalid_argument("Alphabet is empty");
+    }
     CalcMinLength();
   }
 
@@ -54,11 +57,23 @@ class PasswordGenerator {
     return result;
   }
 
+  std::string GetAlphabet() const { return alphabet_; }
   uint64_t GetSmin() const { return S_min_; }
   uint64_t GetS() const { return S_; }
   int GetLength() const { return lenght_; }
 
  private:
+  std::string GetAlphabetFromBitmask(int alphabet_bitmask) {
+    std::string result;
+    result += (alphabet_bitmask & (1 << 0) ? GenAlphabet('0', '9') : "");
+    result += (alphabet_bitmask & (1 << 1) ? GenAlphabet('a', 'z') : "");
+    result += (alphabet_bitmask & (1 << 2) ? GenAlphabet('A', 'Z') : "");
+    result += (alphabet_bitmask & (1 << 3)
+                   ? GenAlphabet('!', '/') + GenAlphabet(':', '@')
+                   : "");
+    return result;
+  }
+
   void CalcMinLength() {
     for (S_ = 0, lenght_ = 1; S_ < S_min_;) {
       S_ = std::pow(alphabet_.length(), ++lenght_);
@@ -80,18 +95,19 @@ int main() {
   std::cout << "V = " << V << '\n';
   std::cout << "T = " << T << "\n\n";
 
-  const std::string alphabet = GenAlphabet('0', '9') + GenAlphabet('a', 'z') +
-                               GenAlphabet('A', 'Z') + GenAlphabet('!', '/') +
-                               GenAlphabet(':', '@');
+  PasswordGenerator generator(P, V, T, 0b1111);
 
-  std::cout << "Alphabet: " << alphabet << '\n';
-  std::cout << "Length: " << alphabet.length() << "\n\n";
+  uint64_t S_min = generator.GetSmin();
+  uint64_t S = generator.GetS();
+  std::string A = generator.GetAlphabet();
+  int L = generator.GetLength();
 
-  PasswordGenerator generator(alphabet, P, V, T);
+  std::cout << "Alphabet: " << A << '\n';
+  std::cout << "Length: " << A.length() << "\n\n";
 
   std::cout << "S* <= S = A**L" << '\n';
-  std::cout << generator.GetSmin() << " <= " << generator.GetS() << " = "
-            << alphabet.length() << "**" << generator.GetLength() << "\n\n";
+  std::cout << S_min << " <= " << S << " = " << A.length() << "**" << L
+            << "\n\n";
 
   std::cout << "Password examples:\n";
   for (int i = 0; i < 10; ++i) {
