@@ -3,7 +3,6 @@ from cyphers import cesar, replacement, vigenere
 
 
 class TestCyphers(unittest.TestCase):
-
     def test_cesar_encrypt(self):
         self.assertEqual(cesar("hello world", 3), "khoor zruog")
         self.assertEqual(cesar("the quick brown fox", 13), "gur dhvpx oebja sbk")
